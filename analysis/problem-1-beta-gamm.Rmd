@@ -18,7 +18,8 @@ library(lubridate)
 library(mgcv)
 library(ggplot2)
 
-data_path <- file.path("data", "nipt_data.xlsx")
+repo_root <- if (basename(getwd()) == "analysis") normalizePath("..") else getwd()
+data_path <- file.path(repo_root, "data", "nipt_data.xlsx")
 if (!file.exists(data_path)) {
   stop("The authorized dataset is not included. Place it at data/nipt_data.xlsx.")
 }
@@ -148,4 +149,5 @@ ggplot(diagnostic_data, aes(linear_predictor, residual)) +
 ## Interpretation note
 
 The fitted relationships describe associations in the competition dataset. They should not be interpreted as causal effects or used for clinical decisions without external validation.
+
 

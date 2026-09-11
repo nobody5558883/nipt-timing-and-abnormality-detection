@@ -29,13 +29,13 @@ The main methods used in this project include:
 
 ## Repository Contents
 
-- `problem-1-beta-gamm.Rmd` — Relationship between Y-chromosome concentration, gestational age, and maternal BMI
-- `problem-2-optimal-timing.ipynb` — BMI grouping and optimal NIPT timing
-- `problem-3-risk-minimization.ipynb` — Risk-based optimization under measurement uncertainty
-- `problem-4-abnormality-detection.ipynb` — Chromosomal abnormality detection for female fetuses
-- `model-comparison-reml.ipynb` — Comparison of candidate statistical models
-- `model-fit-r-squared.ipynb` — Calculation of model goodness-of-fit
-- `nipt-modeling-paper.pdf` — Complete research paper
+- [`analysis/problem-1-beta-gamm.Rmd`](analysis/problem-1-beta-gamm.Rmd) — Relationship between Y-chromosome concentration, gestational age, and maternal BMI
+- [`analysis/problem-2-optimal-timing.ipynb`](analysis/problem-2-optimal-timing.ipynb) — BMI grouping and optimal NIPT timing
+- [`analysis/problem-3-risk-minimization.ipynb`](analysis/problem-3-risk-minimization.ipynb) — Risk-based optimization under measurement uncertainty
+- [`analysis/problem-4-abnormality-detection.ipynb`](analysis/problem-4-abnormality-detection.ipynb) — Chromosomal abnormality detection for female fetuses
+- [`analysis/model-comparison-reml.ipynb`](analysis/model-comparison-reml.ipynb) — Comparison of candidate statistical models
+- [`analysis/model-fit-r-squared.ipynb`](analysis/model-fit-r-squared.ipynb) — Calculation of model goodness-of-fit
+- [`paper/nipt-modeling-paper.pdf`](paper/nipt-modeling-paper.pdf) — Complete research paper
 
 ## Technologies
 
@@ -62,3 +62,4 @@ The abnormality-detection task involves a highly imbalanced outcome, with relati
 ## Disclaimer
 
 This project was developed for academic and mathematical modeling purposes. It is not intended to provide medical advice or replace professional clinical diagnosis.
+
