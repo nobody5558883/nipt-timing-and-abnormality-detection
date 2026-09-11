@@ -1,0 +1,151 @@
+---
+title: "Beta-GAMM Analysis of Fetal Y-Chromosome Fraction"
+output: html_document
+date: "2025-09-04"
+---
+
+## Objective
+
+This analysis evaluates the nonlinear association of gestational age and maternal BMI with fetal Y-chromosome fraction. A beta generalized additive mixed model accounts for the bounded response and repeated measurements from the same participant.
+
+## Setup
+
+```{r setup, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(forcats)
+library(lubridate)
+library(mgcv)
+library(ggplot2)
+
+data_path <- file.path("data", "nipt_data.xlsx")
+if (!file.exists(data_path)) {
+  stop("The authorized dataset is not included. Place it at data/nipt_data.xlsx.")
+}
+```
+
+## Load and prepare the data
+
+The workbook is expected to contain a worksheet named `male_data` with the English column names listed in `data/README.md`.
+
+```{r data-preparation}
+df <- read_excel(data_path, sheet = "male_data") %>%
+  transmute(
+    maternal_id = factor(maternal_id),
+    maternal_age = as.numeric(maternal_age),
+    maternal_bmi = as.numeric(maternal_bmi),
+    gestational_age = as.numeric(gestational_age),
+    y_fraction = as.numeric(y_chromosome_fraction),
+    conception_method = factor(conception_method),
+    parity = as.integer(parity),
+    aneuploidy = as.numeric(aneuploidy)
+  ) %>%
+  filter(aneuploidy == 0 | is.na(aneuploidy)) %>%
+  filter(
+    is.finite(maternal_bmi),
+    is.finite(gestational_age),
+    is.finite(y_fraction),
+    !is.na(maternal_id)
+  )
+
+if (max(df$y_fraction, na.rm = TRUE) > 1) {
+  df <- df %>% mutate(y_fraction = y_fraction / 100)
+}
+
+n_total <- nrow(df)
+df <- df %>%
+  mutate(y_fraction_adjusted = (y_fraction * (n_total - 1) + 0.5) / n_total)
+```
+
+## Fit candidate models
+
+```{r model-fitting}
+m1 <- gam(
+  y_fraction_adjusted ~ s(gestational_age, k = 6) + s(maternal_id, bs = "re"),
+  data = df,
+  family = betar(link = "logit"),
+  method = "REML"
+)
+
+m2 <- gam(
+  y_fraction_adjusted ~ s(gestational_age, k = 6) + s(maternal_bmi, k = 5) +
+    s(maternal_id, bs = "re"),
+  data = df,
+  family = betar(link = "logit"),
+  method = "REML"
+)
+
+m3 <- gam(
+  y_fraction_adjusted ~ s(gestational_age, k = 6) + s(maternal_bmi, k = 5) +
+    te(gestational_age, maternal_bmi, k = c(6, 5)) + s(maternal_id, bs = "re"),
+  data = df,
+  family = betar(link = "logit"),
+  method = "REML"
+)
+
+m4 <- gam(
+  y_fraction_adjusted ~ s(gestational_age, k = 6) + s(maternal_bmi, k = 5) +
+    te(gestational_age, maternal_bmi, k = c(6, 5)) + maternal_age +
+    conception_method + parity + s(maternal_id, bs = "re"),
+  data = df,
+  family = betar(link = "logit"),
+  method = "REML"
+)
+```
+
+## Compare model fit
+
+```{r model-comparison}
+model_comparison <- data.frame(
+  model = c("m1", "m2", "m3", "m4"),
+  AIC = c(AIC(m1), AIC(m2), AIC(m3), AIC(m4)),
+  REML_score = c(
+    as.numeric(-2 * logLik(m1)),
+    as.numeric(-2 * logLik(m2)),
+    as.numeric(-2 * logLik(m3)),
+    as.numeric(-2 * logLik(m4))
+  )
+)
+
+model_comparison
+anova(m1, m2, m3, m4, test = "Chisq")
+```
+
+## Diagnose the selected model
+
+```{r diagnostics, fig.width=7, fig.height=5}
+selected_model <- m3
+diagnostic_data <- data.frame(
+  fitted = fitted(selected_model, type = "response"),
+  observed = model.response(model.frame(selected_model)),
+  residual = residuals(selected_model, type = "deviance"),
+  linear_predictor = predict(selected_model, type = "link")
+)
+
+ggplot(diagnostic_data, aes(fitted, observed)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey40") +
+  geom_point(alpha = 0.55, color = "#2B6CB0") +
+  geom_smooth(method = "loess", se = FALSE, color = "#E76F51") +
+  labs(
+    title = "Observed versus fitted fetal Y-chromosome fraction",
+    x = "Fitted fraction",
+    y = "Observed fraction"
+  ) +
+  theme_classic()
+
+ggplot(diagnostic_data, aes(linear_predictor, residual)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_point(alpha = 0.55, color = "#3366CC") +
+  geom_smooth(method = "loess", se = FALSE, color = "#E76F51") +
+  labs(
+    title = "Deviance residuals versus linear predictor",
+    x = "Linear predictor",
+    y = "Deviance residual"
+  ) +
+  theme_classic()
+```
+
+## Interpretation note
+
+The fitted relationships describe associations in the competition dataset. They should not be interpreted as causal effects or used for clinical decisions without external validation.
+
