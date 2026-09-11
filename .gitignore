@@ -1,0 +1,6 @@
+data/*.xlsx
+outputs/
+.ipynb_checkpoints/
+.Rhistory
+.Rproj.user/
+
